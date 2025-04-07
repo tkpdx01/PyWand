@@ -1,0 +1,22 @@
+# PyWand sample configuration file
+app_name: PyWand
+version: "0.1.0"
+debug: true
+api_key: "sample_api_key_123456"
+
+# API endpoints
+endpoints:
+  main_api: "https://api.example.com/v1"
+  backup_api: "https://backup-api.example.com/v1"
+  
+# Environment settings
+environment:
+  name: "development"
+  log_level: "debug"
+  
+# Additional settings
+settings:
+  cache_enabled: true
+  cache_ttl: 3600
+  max_retries: 5
+  timeout: 30 
