@@ -1,0 +1,144 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 当创建以v开头的标签时触发，如v0.1.0
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: PyWand ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            PyWand ${{ github.ref_name }} Release
+            
+            Python依赖分析和管理工具
+
+  build-windows:
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Build for Windows
+        run: cargo build --release
+      - name: Download UV Binaries
+        shell: bash
+        run: |
+          chmod +x download_uv.sh
+          ./download_uv.sh
+      - name: Create distribution package
+        shell: powershell
+        run: |
+          New-Item -Path pywand-windows -ItemType Directory
+          Copy-Item -Path target\release\pywand.exe -Destination pywand-windows\
+          Copy-Item -Path README.md -Destination pywand-windows\
+          Copy-Item -Path LICENSE -Destination pywand-windows\
+          Copy-Item -Path resources\uv\windows-x64\* -Destination pywand-windows\ -Recurse
+          Compress-Archive -Path pywand-windows\* -DestinationPath pywand-windows.zip
+      - name: Upload Windows Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./pywand-windows.zip
+          asset_name: pywand-windows-x64.zip
+          asset_content_type: application/zip
+
+  build-macos:
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Build for macOS
+        run: cargo build --release
+      - name: Download UV Binaries
+        run: |
+          chmod +x download_uv.sh
+          ./download_uv.sh
+      - name: Determine macOS architecture
+        id: macos-arch
+        run: |
+          if [[ $(uname -m) == "arm64" ]]; then
+            echo "arch=arm64" >> $GITHUB_OUTPUT
+          else
+            echo "arch=x64" >> $GITHUB_OUTPUT
+          fi
+      - name: Create distribution package
+        run: |
+          mkdir pywand-macos
+          cp target/release/pywand pywand-macos/
+          cp README.md pywand-macos/
+          cp LICENSE pywand-macos/
+          cp -r resources/uv/macos-${{ steps.macos-arch.outputs.arch }}/* pywand-macos/
+          chmod +x pywand-macos/pywand
+          tar -czf pywand-macos-${{ steps.macos-arch.outputs.arch }}.tar.gz -C pywand-macos .
+      - name: Upload macOS Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./pywand-macos-${{ steps.macos-arch.outputs.arch }}.tar.gz
+          asset_name: pywand-macos-${{ steps.macos-arch.outputs.arch }}.tar.gz
+          asset_content_type: application/gzip
+
+  build-linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Build for Linux
+        run: cargo build --release
+      - name: Download UV Binaries
+        run: |
+          chmod +x download_uv.sh
+          ./download_uv.sh
+      - name: Create distribution package
+        run: |
+          mkdir pywand-linux
+          cp target/release/pywand pywand-linux/
+          cp README.md pywand-linux/
+          cp LICENSE pywand-linux/
+          cp -r resources/uv/linux-x64/* pywand-linux/
+          chmod +x pywand-linux/pywand
+          tar -czf pywand-linux-x64.tar.gz -C pywand-linux .
+      - name: Upload Linux Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./pywand-linux-x64.tar.gz
+          asset_name: pywand-linux-x64.tar.gz
+          asset_content_type: application/gzip 

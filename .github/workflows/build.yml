@@ -1,0 +1,38 @@
+name: CI Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+    - name: Make download_uv.sh executable in Unix systems
+      if: runner.os != 'Windows'
+      run: chmod +x download_uv.sh
+    - name: Download UV Binaries (Unix)
+      if: runner.os != 'Windows'
+      run: ./download_uv.sh
+    - name: Download UV Binaries (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        chmod +x download_uv.sh
+        ./download_uv.sh
+    - name: Build
+      run: cargo build --release
+    - name: Run tests
+      run: cargo test --release 

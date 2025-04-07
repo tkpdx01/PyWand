@@ -1,0 +1,46 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+categories:
+  - title: '🚀 Features'
+    labels:
+      - 'feature'
+      - 'enhancement'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+  - title: '🧰 Maintenance'
+    labels:
+      - 'chore'
+      - 'documentation'
+      - 'doc'
+      - 'refactor'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
+template: |
+  ## PyWand $RESOLVED_VERSION
+
+  $CHANGES
+
+  ### 安装说明
+  
+  提供了Windows、macOS和Linux平台的预编译二进制文件：
+  
+  - Windows: 下载pywand-windows-x64.zip，解压后运行pywand.exe
+  - macOS: 下载对应架构(arm64或x64)的pywand-macos-*.tar.gz，解压后运行pywand
+  - Linux: 下载pywand-linux-x64.tar.gz，解压后运行pywand
+
+  ### 文档
+
+  详细使用说明请参考[README.md](https://github.com/tkpdx01/PyWand/blob/main/README.md) 
